@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { Suspense } from "react"
 import FooterYear from "@/components/footer-year"
 import {
   FaChartLine,
@@ -180,7 +181,9 @@ export default function Home() {
 
       <footer className="relative z-10 mx-auto w-full max-w-6xl px-5 pb-8 text-center text-xs text-slate-500 sm:px-8 sm:text-sm">
         Built with <FaHeart className="inline text-rose-400" /> — {APP_NAME} ©{" "}
-        <FooterYear />
+        <Suspense fallback={"Loading year..."}>
+          <FooterYear />
+        </Suspense>
       </footer>
     </div>
   )
