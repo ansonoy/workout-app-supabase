@@ -112,7 +112,7 @@ export default function Home() {
 
           <div className="mt-8 flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row">
             <Link
-              href="/signup"
+              href="/auth/sign-up"
               className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-linear-to-r from-rose-500 to-orange-500 px-7 py-3.5 text-base font-semibold text-white shadow-lg shadow-rose-500/30 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-rose-500/40 sm:w-auto"
             >
               Get started — it&apos;s free
@@ -169,7 +169,7 @@ export default function Home() {
               celebrating.
             </p>
             <Link
-              href="/auth/signup"
+              href="/auth/sign-up"
               className="relative mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-900 shadow-md transition hover:-translate-y-0.5 hover:shadow-lg sm:text-base"
             >
               Start tracking today

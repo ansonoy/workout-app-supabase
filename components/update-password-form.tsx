@@ -44,10 +44,12 @@ export function UpdatePasswordForm({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
+      <Card className="border-0 bg-white/80 backdrop-blur-sm shadow-xl ring-1 ring-slate-200/70 rounded-3xl">
         <CardHeader>
-          <CardTitle className="text-2xl">Reset Your Password</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-2xl text-slate-900">
+            Reset Your Password
+          </CardTitle>
+          <CardDescription className="text-slate-600">
             Please enter your new password below.
           </CardDescription>
         </CardHeader>
@@ -55,7 +57,9 @@ export function UpdatePasswordForm({
           <form onSubmit={handleForgotPassword}>
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
-                <Label htmlFor="password">New password</Label>
+                <Label htmlFor="password" className="text-slate-700">
+                  New password
+                </Label>
                 <Input
                   id="password"
                   type="password"
@@ -65,8 +69,12 @@ export function UpdatePasswordForm({
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              {error && <p className="text-sm text-rose-600">{error}</p>}
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full rounded-full bg-linear-to-r from-rose-500 to-orange-500 text-white shadow-lg shadow-rose-500/30 transition hover:-translate-y-0.5 hover:from-rose-600 hover:to-orange-600 hover:shadow-xl hover:shadow-rose-500/40"
+              >
                 {isLoading ? "Saving..." : "Save new password"}
               </Button>
             </div>
@@ -74,5 +82,5 @@ export function UpdatePasswordForm({
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }
