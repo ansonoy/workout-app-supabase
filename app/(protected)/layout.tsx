@@ -5,6 +5,7 @@ import { Suspense } from "react"
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import ThemedShell from "@/components/themed-shell"
+import AppNav from "@/components/app-nav"
 
 async function AuthGate({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -35,7 +36,10 @@ export default function ProtectedLayout({
       }
     >
       <Suspense>
-        <AuthGate>{children}</AuthGate>
+        <AuthGate>
+          <AppNav />
+          {children}
+        </AuthGate>
       </Suspense>
     </ThemedShell>
   )
