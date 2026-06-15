@@ -109,7 +109,9 @@ export default async function WorkoutLogDetailPage({
           {groups.map((g, gi) => (
             <div
               key={gi}
-              cdiv className="flex flex-wrap items-center justify-between gap-2">
+              className="rounded-2xl bg-white/80 p-4 shadow-xs ring-1 ring-slate-200/70 backdrop-blur-sm"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="font-semibold text-slate-900">
                   {g.exerciseName}
                 </h3>
@@ -126,9 +128,7 @@ export default async function WorkoutLogDetailPage({
                     </span>
                   )
                 })()}
-              </dive-200/70 backdrop-blur-sm"
-            >
-              <h3 className="font-semibold text-slate-900">{g.exerciseName}</h3>
+              </div>
               <ul className="mt-3 grid gap-1 text-sm">
                 {g.sets.map((s) => (
                   <li
