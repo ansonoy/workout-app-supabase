@@ -82,7 +82,7 @@ export default function BodyWeightChart({
                 border: "1px solid #e2e8f0",
                 fontSize: 12
               }}
-              formatter={(v: number) => `${v} ${unit}`}
+              formatter={(v) => `${v as number} ${unit}`}
             />
             <Area
               type="monotone"
