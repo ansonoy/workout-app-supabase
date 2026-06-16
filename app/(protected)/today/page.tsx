@@ -13,6 +13,7 @@ import { computeTodaysSession } from "@/lib/rotation"
 import { WEEKDAY_LONG } from "@/lib/types/db"
 import WorkoutLogger from "@/components/today/workout-logger"
 import SkipSessionButton from "@/components/today/skip-button"
+import TodayDate from "@/components/today/today-date"
 
 export default async function TodayPage() {
   const [program, profile] = await Promise.all([
@@ -47,19 +48,13 @@ export default async function TodayPage() {
     completedWorkouts
   })
 
-  const todayLabel = new Date().toLocaleDateString(undefined, {
-    weekday: "long",
-    month: "long",
-    day: "numeric"
-  })
-
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <div className="rounded-3xl bg-white/80 p-6 shadow-xl ring-1 ring-slate-200/70 backdrop-blur-sm">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-rose-600">
-              {todayLabel}
+              <TodayDate />
             </p>
             <h1 className="mt-1 text-3xl font-bold text-slate-900">
               {result.kind === "scheduled"
