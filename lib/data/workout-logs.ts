@@ -1,5 +1,6 @@
 import "server-only"
 import { createClient } from "@/lib/supabase/server"
+import { zonedTodayRangeUtc } from "@/lib/rotation"
 import type {
   WorkoutLog,
   WorkoutLogWithDetails,
@@ -21,20 +22,18 @@ export async function countCompletedWorkouts(
 
 /** Has the user already logged (or skipped) anything today for this program? */
 export async function getTodaysLogIfAny(
-  programId: string
+  programId: string,
+  tz?: string | null
 ): Promise<WorkoutLog | null> {
   const supabase = await createClient()
-  const now = new Date()
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const end = new Date(start)
-  end.setDate(end.getDate() + 1)
+  const { startIso, endIso } = zonedTodayRangeUtc(tz)
 
   const { data, error } = await supabase
     .from("workout_logs")
     .select("*")
     .eq("program_id", programId)
-    .gte("performed_at", start.toISOString())
-    .lt("performed_at", end.toISOString())
+    .gte("performed_at", startIso)
+    .lt("performed_at", endIso)
     .order("performed_at", { ascending: false })
     .limit(1)
     .maybeSingle()

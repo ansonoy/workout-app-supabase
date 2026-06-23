@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { cookies } from "next/headers"
 import {
   getActiveProgramWithSessions,
   getSessionWithExercises
@@ -9,17 +10,26 @@ import {
   getLastLoggedSetsForSession
 } from "@/lib/data/workout-logs"
 import { getCurrentProfile } from "@/lib/data/profile"
-import { computeTodaysSession } from "@/lib/rotation"
-import { WEEKDAY_LONG } from "@/lib/types/db"
+import { computeTodaysSession, todayInTz } from "@/lib/rotation"
+import { WEEKDAY_LONG, type Session } from "@/lib/types/db"
 import WorkoutLogger from "@/components/today/workout-logger"
 import SkipSessionButton from "@/components/today/skip-button"
 import TodayDate from "@/components/today/today-date"
 
-export default async function TodayPage() {
-  const [program, profile] = await Promise.all([
+export default async function TodayPage({
+  searchParams
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+  const [program, profile, cookieStore, sp] = await Promise.all([
     getActiveProgramWithSessions(),
-    getCurrentProfile()
+    getCurrentProfile(),
+    cookies(),
+    searchParams
   ])
+
+  const tz = cookieStore.get("tz")?.value ?? null
+  const startId = typeof sp.start === "string" ? sp.start : null
 
   if (!program) {
     return (
@@ -45,8 +55,14 @@ export default async function TodayPage() {
     startDate: program.start_date,
     trainingWeekdays: program.training_weekdays,
     sessions: program.sessions,
-    completedWorkouts
+    completedWorkouts,
+    today: todayInTz(tz)
   })
+
+  // A session explicitly chosen by the user (e.g. training on an off day).
+  const manualSession = startId
+    ? (program.sessions.find((s) => s.id === startId) ?? null)
+    : null
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
@@ -57,16 +73,18 @@ export default async function TodayPage() {
               <TodayDate />
             </p>
             <h1 className="mt-1 text-3xl font-bold text-slate-900">
-              {result.kind === "scheduled"
-                ? result.session.name
-                : result.kind === "rest_day"
-                  ? "Rest day"
-                  : result.kind === "before_start"
-                    ? "Program hasn't started yet"
-                    : "No sessions yet"}
+              {manualSession
+                ? manualSession.name
+                : result.kind === "scheduled"
+                  ? result.session.name
+                  : result.kind === "rest_day"
+                    ? "Rest day"
+                    : result.kind === "before_start"
+                      ? "Program hasn't started yet"
+                      : "No sessions yet"}
             </h1>
             <p className="mt-1 text-sm text-slate-600">
-              From your active program{" "}
+              {manualSession ? "Extra session from " : "From your active program "}
               <Link
                 href={`/programs/${program.id}`}
                 className="font-semibold text-rose-600 hover:underline"
@@ -75,53 +93,89 @@ export default async function TodayPage() {
               </Link>
             </p>
           </div>
-          {result.kind === "scheduled" && (
-            <SkipSessionButton
-              programId={program.id}
-              sessionId={result.session.id}
-            />
+          {manualSession ? (
+            <Link
+              href="/today"
+              className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-50"
+            >
+              Cancel
+            </Link>
+          ) : (
+            result.kind === "scheduled" && (
+              <SkipSessionButton
+                programId={program.id}
+                sessionId={result.session.id}
+              />
+            )
           )}
         </div>
       </div>
 
-      {result.kind === "scheduled" && (
+      {manualSession ? (
         <ScheduledSessionView
-          sessionId={result.session.id}
+          sessionId={manualSession.id}
           programId={program.id}
           unit={profile?.unit_preference ?? "kg"}
+          tz={tz}
         />
-      )}
-
-      {result.kind === "rest_day" && (
-        <div className="rounded-2xl bg-white/70 p-6 text-slate-700 ring-1 ring-slate-200/70 backdrop-blur-sm">
-          <p>
-            Take it easy. Your next training day is your scheduled rotation.
-          </p>
-          {result.nextTrainingDate && (
-            <p className="mt-1 text-sm text-slate-500">
-              Next training day: {result.nextTrainingDate}
-            </p>
+      ) : (
+        <>
+          {result.kind === "scheduled" && (
+            <>
+              <ScheduledSessionView
+                sessionId={result.session.id}
+                programId={program.id}
+                unit={profile?.unit_preference ?? "kg"}
+                tz={tz}
+              />
+              <StartSessionPicker
+                sessions={program.sessions}
+                excludeId={result.session.id}
+                title="Prefer a different session?"
+                description="Swap in any other session from your program instead."
+              />
+            </>
           )}
-        </div>
-      )}
 
-      {result.kind === "before_start" && (
-        <div className="rounded-2xl bg-white/70 p-6 text-slate-700 ring-1 ring-slate-200/70 backdrop-blur-sm">
-          Your program starts on <strong>{result.startDate}</strong>.
-        </div>
-      )}
+          {result.kind === "rest_day" && (
+            <>
+              <div className="rounded-2xl bg-white/70 p-6 text-slate-700 ring-1 ring-slate-200/70 backdrop-blur-sm">
+                <p>
+                  Take it easy. Your next training day is your scheduled
+                  rotation.
+                </p>
+                {result.nextTrainingDate && (
+                  <p className="mt-1 text-sm text-slate-500">
+                    Next training day: {result.nextTrainingDate}
+                  </p>
+                )}
+              </div>
+              <StartSessionPicker sessions={program.sessions} />
+            </>
+          )}
 
-      {result.kind === "no_sessions" && (
-        <div className="rounded-2xl bg-white/70 p-6 text-slate-700 ring-1 ring-slate-200/70 backdrop-blur-sm">
-          This program doesn&apos;t have any sessions yet.{" "}
-          <Link
-            href={`/programs/${program.id}`}
-            className="font-semibold text-rose-600 hover:underline"
-          >
-            Add some sessions
-          </Link>
-          .
-        </div>
+          {result.kind === "before_start" && (
+            <>
+              <div className="rounded-2xl bg-white/70 p-6 text-slate-700 ring-1 ring-slate-200/70 backdrop-blur-sm">
+                Your program starts on <strong>{result.startDate}</strong>.
+              </div>
+              <StartSessionPicker sessions={program.sessions} />
+            </>
+          )}
+
+          {result.kind === "no_sessions" && (
+            <div className="rounded-2xl bg-white/70 p-6 text-slate-700 ring-1 ring-slate-200/70 backdrop-blur-sm">
+              This program doesn&apos;t have any sessions yet.{" "}
+              <Link
+                href={`/programs/${program.id}`}
+                className="font-semibold text-rose-600 hover:underline"
+              >
+                Add some sessions
+              </Link>
+              .
+            </div>
+          )}
+        </>
       )}
 
       {program.training_weekdays.length > 0 && (
@@ -134,18 +188,54 @@ export default async function TodayPage() {
   )
 }
 
+function StartSessionPicker({
+  sessions,
+  excludeId,
+  title = "Want to train anyway?",
+  description = "Start any session from your program."
+}: {
+  sessions: Session[]
+  excludeId?: string
+  title?: string
+  description?: string
+}) {
+  const ordered = [...sessions]
+    .filter((s) => s.id !== excludeId)
+    .sort((a, b) => a.position - b.position)
+  if (ordered.length === 0) return null
+  return (
+    <div className="rounded-2xl bg-white/70 p-6 ring-1 ring-slate-200/70 backdrop-blur-sm">
+      <p className="text-sm font-semibold text-slate-900">{title}</p>
+      <p className="mt-1 text-xs text-slate-500">{description}</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {ordered.map((s) => (
+          <Link
+            key={s.id}
+            href={`/today?start=${s.id}`}
+            className="rounded-full bg-linear-to-r from-rose-500 to-orange-500 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-rose-500/30 transition hover:-translate-y-0.5"
+          >
+            {s.name}
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 async function ScheduledSessionView({
   sessionId,
   programId,
-  unit
+  unit,
+  tz
 }: {
   sessionId: string
   programId: string
   unit: "kg" | "lb"
+  tz: string | null
 }) {
   const [session, todaysLog, previous] = await Promise.all([
     getSessionWithExercises(sessionId),
-    getTodaysLogIfAny(programId),
+    getTodaysLogIfAny(programId, tz),
     getLastLoggedSetsForSession(sessionId)
   ])
   if (!session) return null

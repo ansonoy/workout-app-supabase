@@ -6,6 +6,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import ThemedShell from "@/components/themed-shell"
 import AppNav from "@/components/app-nav"
+import TimezoneCookie from "@/components/timezone-cookie"
 
 async function AuthGate({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -37,6 +38,7 @@ export default function ProtectedLayout({
     >
       <Suspense>
         <AuthGate>
+          <TimezoneCookie />
           <AppNav />
           {children}
         </AuthGate>

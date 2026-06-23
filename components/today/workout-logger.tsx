@@ -101,7 +101,10 @@ export default function WorkoutLogger({
       const next = prev.map((d, j) => (j === i ? { ...d, done: !d.done } : d))
       const target = next[i]
       if (target.done && target.restSeconds && target.restSeconds > 0) {
-        timerRef.current?.start(target.restSeconds)
+        // Defer the timer start so we don't trigger a state update on
+        // RestTimer while WorkoutLogger is still rendering.
+        const rest = target.restSeconds
+        queueMicrotask(() => timerRef.current?.start(rest))
       }
       return next
     })
