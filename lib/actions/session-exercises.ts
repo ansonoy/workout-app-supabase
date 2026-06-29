@@ -178,16 +178,20 @@ export async function replaceSessionExerciseSets(args: {
   sessionId: string
   programId: string
   restSeconds: number | null
+  increment: number
   sets: SetInput[]
 }): Promise<{ error?: string }> {
   const parsed = SetsInputSchema.safeParse(args.sets)
   if (!parsed.success) return { error: "Invalid sets payload" }
 
+  const increment =
+    Number.isFinite(args.increment) && args.increment >= 0 ? args.increment : 5
+
   const supabase = await createClient()
 
   const { error: updErr } = await supabase
     .from("session_exercises")
-    .update({ rest_seconds: args.restSeconds })
+    .update({ rest_seconds: args.restSeconds, increment })
     .eq("id", args.sessionExerciseId)
   if (updErr) return { error: updErr.message }
 

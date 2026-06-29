@@ -72,6 +72,9 @@ export default function SessionExerciseEditor({
         ]
   )
   const [rest, setRest] = useState<string>(se.rest_seconds?.toString() ?? "")
+  const [increment, setIncrement] = useState<string>(
+    se.increment?.toString() ?? "5"
+  )
   const [savedFlash, setSavedFlash] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
@@ -110,6 +113,7 @@ export default function SessionExerciseEditor({
         sessionId,
         programId,
         restSeconds: rest.trim() ? Math.max(0, Math.trunc(Number(rest))) : null,
+        increment: increment.trim() ? Math.max(0, Number(increment)) : 5,
         sets: sets.map(toInput)
       })
       if (res.error) {
@@ -259,6 +263,24 @@ export default function SessionExerciseEditor({
               min={0}
               value={rest}
               onChange={(e) => setRest(e.target.value)}
+              className="h-8 w-24"
+            />
+          </div>
+          <div className="grid gap-1">
+            <Label
+              htmlFor={`increment-${se.id}`}
+              className="text-xs text-slate-600"
+            >
+              Increment
+            </Label>
+            <Input
+              id={`increment-${se.id}`}
+              type="number"
+              inputMode="decimal"
+              step="0.5"
+              min={0}
+              value={increment}
+              onChange={(e) => setIncrement(e.target.value)}
               className="h-8 w-24"
             />
           </div>

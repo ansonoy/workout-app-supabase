@@ -78,7 +78,6 @@ export type Exercise = {
   secondary_muscles: MuscleGroup[]
   equipment: EquipmentType
   media_url: string | null
-  increment: number
   created_at: string
   updated_at: string
 }
@@ -141,6 +140,7 @@ export type SessionExercise = {
   exercise_id: string
   position: number
   rest_seconds: number | null
+  increment: number
   notes: string | null
 }
 

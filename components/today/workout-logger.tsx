@@ -42,7 +42,7 @@ function buildInitial(
 ): DraftSet[] {
   const out: DraftSet[] = []
   for (const se of session.session_exercises) {
-    const increment = se.exercise.increment ?? 0
+    const increment = se.increment ?? 0
     for (const s of se.sets) {
       const prior = prev[prevKey(se.exercise_id, s.set_number)]
       // When we have a previous result for this set, suggest progressing it by
