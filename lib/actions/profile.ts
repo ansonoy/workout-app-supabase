@@ -24,7 +24,7 @@ export async function updateMyProfile(
 
   const parsed = ProfileSchema.safeParse({
     display_name: formData.get("display_name") ?? "",
-    unit_preference: formData.get("unit_preference") ?? "kg"
+    unit_preference: formData.get("unit_preference") ?? "lb"
   })
   if (!parsed.success) return { error: "Invalid input" }
 

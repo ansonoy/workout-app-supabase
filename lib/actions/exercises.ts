@@ -15,7 +15,8 @@ const ExerciseSchema = z.object({
     .array(z.enum(MUSCLE_GROUPS as [string, ...string[]]))
     .default([]),
   equipment: z.enum(EQUIPMENT_TYPES as [string, ...string[]]),
-  media_url: z.string().trim().url().optional().or(z.literal(""))
+  media_url: z.string().trim().url().optional().or(z.literal("")),
+  increment: z.coerce.number().min(0).max(1000).default(5)
 })
 
 export type ExerciseActionState = {
@@ -30,7 +31,8 @@ function parseFormData(fd: FormData) {
     primary_muscle: fd.get("primary_muscle") ?? "",
     secondary_muscles: fd.getAll("secondary_muscles") as string[],
     equipment: fd.get("equipment") ?? "",
-    media_url: fd.get("media_url") ?? ""
+    media_url: fd.get("media_url") ?? "",
+    increment: fd.get("increment") ?? 5
   })
 }
 
@@ -41,7 +43,8 @@ function normalize(input: z.infer<typeof ExerciseSchema>) {
     primary_muscle: input.primary_muscle,
     secondary_muscles: input.secondary_muscles,
     equipment: input.equipment,
-    media_url: input.media_url || null
+    media_url: input.media_url || null,
+    increment: input.increment
   }
 }
 

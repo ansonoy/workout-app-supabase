@@ -24,7 +24,7 @@ export default async function ExerciseDetailPage({
   const isOwner = !!profile && exercise.owner_id === profile.id
   const isAdmin = isAdminRole(profile?.role)
   const canEdit = isOwner || (isAdmin && exercise.owner_id === null)
-  const unit = profile?.unit_preference ?? "kg"
+  const unit = profile?.unit_preference ?? "lb"
 
   const bestWeight = history.reduce((m, p) => Math.max(m, p.topWeight), 0)
   const bestE1rm = history.reduce((m, p) => Math.max(m, p.bestE1rm), 0)

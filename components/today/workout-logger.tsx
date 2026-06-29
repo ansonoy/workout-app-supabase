@@ -22,6 +22,7 @@ type DraftSet = {
   setNumber: number
   targetReps: number | null
   targetWeight: number | null
+  increment: number
   reps: string
   weight: string
   rpe: string
@@ -41,20 +42,24 @@ function buildInitial(
 ): DraftSet[] {
   const out: DraftSet[] = []
   for (const se of session.session_exercises) {
+    const increment = se.exercise.increment ?? 0
     for (const s of se.sets) {
       const prior = prev[prevKey(se.exercise_id, s.set_number)]
+      // When we have a previous result for this set, suggest progressing it by
+      // the exercise's increment. Otherwise fall back to the prescribed target.
+      const suggestedWeight =
+        prior?.weight != null ? prior.weight + increment : s.target_weight
       out.push({
         exerciseId: se.exercise_id,
         prescribedSetId: s.id,
         setNumber: s.set_number,
         targetReps: s.target_reps,
         targetWeight: s.target_weight,
+        increment,
         reps:
           prior?.reps?.toString() ??
           (s.target_reps != null ? String(s.target_reps) : ""),
-        weight:
-          prior?.weight?.toString() ??
-          (s.target_weight != null ? String(s.target_weight) : ""),
+        weight: suggestedWeight != null ? String(suggestedWeight) : "",
         rpe: s.target_rpe != null ? String(s.target_rpe) : "",
         done: false,
         restSeconds: se.rest_seconds
@@ -93,6 +98,20 @@ export default function WorkoutLogger({
   function patch(i: number, key: keyof DraftSet, value: string | boolean) {
     setDrafts((prev) =>
       prev.map((d, j) => (j === i ? { ...d, [key]: value } : d))
+    )
+  }
+
+  function stepWeight(i: number, direction: 1 | -1) {
+    setDrafts((prev) =>
+      prev.map((d, j) => {
+        if (j !== i) return d
+        const step = d.increment > 0 ? d.increment : 1
+        const current = Number(d.weight)
+        const base = Number.isFinite(current) && d.weight.trim() ? current : 0
+        const next = Math.max(0, base + direction * step)
+        // Trim trailing .0 so whole numbers stay clean.
+        return { ...d, weight: String(Number(next.toFixed(2))) }
+      })
     )
   }
 
@@ -260,17 +279,35 @@ export default function WorkoutLogger({
                         />
                       </td>
                       <td className="py-2 pr-3">
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          step="0.5"
-                          min={0}
-                          value={draft.weight}
-                          onChange={(e) =>
-                            patch(index, "weight", e.target.value)
-                          }
-                          className="h-8 w-24"
-                        />
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => stepWeight(index, -1)}
+                            aria-label="Decrease weight"
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-base font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+                          >
+                            −
+                          </button>
+                          <Input
+                            type="number"
+                            inputMode="decimal"
+                            step="0.5"
+                            min={0}
+                            value={draft.weight}
+                            onChange={(e) =>
+                              patch(index, "weight", e.target.value)
+                            }
+                            className="h-8 w-20"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => stepWeight(index, 1)}
+                            aria-label="Increase weight"
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-base font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+                          >
+                            +
+                          </button>
+                        </div>
                       </td>
                       <td className="py-2 pr-3">
                         <Input

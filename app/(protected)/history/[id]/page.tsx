@@ -38,7 +38,7 @@ export default async function WorkoutLogDetailPage({
 
   const prs = await detectPRsForLog(log.id)
 
-  const unit = profile?.unit_preference ?? "kg"
+  const unit = profile?.unit_preference ?? "lb"
 
   // Group sets by exercise (preserving sort order from data layer).
   const groups: { exerciseName: string; sets: typeof log.logged_sets }[] = []

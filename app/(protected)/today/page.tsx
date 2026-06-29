@@ -84,7 +84,9 @@ export default async function TodayPage({
                       : "No sessions yet"}
             </h1>
             <p className="mt-1 text-sm text-slate-600">
-              {manualSession ? "Extra session from " : "From your active program "}
+              {manualSession
+                ? "Extra session from "
+                : "From your active program "}
               <Link
                 href={`/programs/${program.id}`}
                 className="font-semibold text-rose-600 hover:underline"
@@ -115,7 +117,7 @@ export default async function TodayPage({
         <ScheduledSessionView
           sessionId={manualSession.id}
           programId={program.id}
-          unit={profile?.unit_preference ?? "kg"}
+          unit={profile?.unit_preference ?? "lb"}
           tz={tz}
         />
       ) : (
@@ -125,7 +127,7 @@ export default async function TodayPage({
               <ScheduledSessionView
                 sessionId={result.session.id}
                 programId={program.id}
-                unit={profile?.unit_preference ?? "kg"}
+                unit={profile?.unit_preference ?? "lb"}
                 tz={tz}
               />
               <StartSessionPicker

@@ -130,6 +130,28 @@ export default function ExerciseForm({
       </div>
 
       <div className="grid gap-2">
+        <Label htmlFor="increment" className="text-slate-700">
+          Weight increment
+        </Label>
+        <Input
+          id="increment"
+          name="increment"
+          type="number"
+          inputMode="decimal"
+          step="0.5"
+          min={0}
+          defaultValue={exercise?.increment ?? 5}
+        />
+        <p className="text-xs text-slate-500">
+          How much to add each time you progress this exercise. During a workout
+          your next weight is pre-filled as last weight + this amount.
+        </p>
+        {fe.increment && (
+          <p className="text-sm text-rose-600">{fe.increment[0]}</p>
+        )}
+      </div>
+
+      <div className="grid gap-2">
         <Label htmlFor="media_url" className="text-slate-700">
           Media URL (optional)
         </Label>

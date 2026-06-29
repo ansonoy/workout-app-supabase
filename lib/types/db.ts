@@ -78,6 +78,7 @@ export type Exercise = {
   secondary_muscles: MuscleGroup[]
   equipment: EquipmentType
   media_url: string | null
+  increment: number
   created_at: string
   updated_at: string
 }
