@@ -7,6 +7,8 @@ export type RestTimerHandle = {
   stop: () => void
 }
 
+const REST_TIMER_STORAGE_KEY = "rest-timer"
+
 export function useRestTimer() {
   const ref = useRef<RestTimerHandle | null>(null)
   return ref
@@ -21,28 +23,67 @@ export default function RestTimer({
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
+    // Drive the countdown from an absolute end timestamp so it stays accurate
+    // across refreshes and while the tab is backgrounded.
+    function beginCountdown(endsAt: number) {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+      const tick = () => {
+        const left = Math.max(0, Math.round((endsAt - Date.now()) / 1000))
+        setRemaining(left)
+        if (left <= 0) {
+          if (intervalRef.current) clearInterval(intervalRef.current)
+          intervalRef.current = null
+          try {
+            window.localStorage.removeItem(REST_TIMER_STORAGE_KEY)
+          } catch {
+            // Ignore storage failures.
+          }
+        }
+      }
+      tick()
+      intervalRef.current = setInterval(tick, 250)
+    }
+
     handleRef.current = {
       start(seconds: number) {
-        if (intervalRef.current) clearInterval(intervalRef.current)
-        setRemaining(Math.max(0, Math.floor(seconds)))
-        intervalRef.current = setInterval(() => {
-          setRemaining((r) => {
-            if (r === null) return null
-            if (r <= 1) {
-              if (intervalRef.current) clearInterval(intervalRef.current)
-              intervalRef.current = null
-              return 0
-            }
-            return r - 1
-          })
-        }, 1000)
+        const endsAt = Date.now() + Math.max(0, Math.floor(seconds)) * 1000
+        try {
+          window.localStorage.setItem(
+            REST_TIMER_STORAGE_KEY,
+            JSON.stringify({ endsAt })
+          )
+        } catch {
+          // Ignore storage failures.
+        }
+        beginCountdown(endsAt)
       },
       stop() {
         if (intervalRef.current) clearInterval(intervalRef.current)
         intervalRef.current = null
         setRemaining(null)
+        try {
+          window.localStorage.removeItem(REST_TIMER_STORAGE_KEY)
+        } catch {
+          // Ignore storage failures.
+        }
       }
     }
+
+    // Resume a timer that was still running before the page refreshed.
+    try {
+      const raw = window.localStorage.getItem(REST_TIMER_STORAGE_KEY)
+      if (raw) {
+        const saved = JSON.parse(raw) as { endsAt?: number }
+        if (typeof saved.endsAt === "number" && saved.endsAt > Date.now()) {
+          beginCountdown(saved.endsAt)
+        } else {
+          window.localStorage.removeItem(REST_TIMER_STORAGE_KEY)
+        }
+      }
+    } catch {
+      // Ignore corrupt or unavailable storage.
+    }
+
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useRef, useState, useTransition } from "react"
+import { useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import {
@@ -15,6 +15,20 @@ import {
   type SaveWorkoutLogInput
 } from "@/lib/actions/workout-logs"
 import RestTimer, { type RestTimerHandle } from "./rest-timer"
+
+// Bump when the persisted shape changes so stale drafts are discarded.
+const DRAFT_STORAGE_VERSION = 1
+const DRAFT_STORAGE_PREFIX = "workout-draft:"
+// Drop drafts that are older than a day so we never resurrect stale workouts.
+const DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000
+
+type PersistedDraft = {
+  version: number
+  startedAt: number
+  notes: string
+  drafts: DraftSet[]
+  savedAt: number
+}
 
 type DraftSet = {
   exerciseId: string
@@ -85,10 +99,56 @@ export default function WorkoutLogger({
     buildInitial(session, previousLoggedSets)
   )
   const [notes, setNotes] = useState("")
-  const [startedAt] = useState(() => Date.now())
+  const [startedAt, setStartedAt] = useState(() => Date.now())
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
   const timerRef = useRef<RestTimerHandle | null>(null)
+
+  const storageKey = `${DRAFT_STORAGE_PREFIX}${session.id}`
+  // Gate saving until we've restored, so the first render doesn't overwrite
+  // a previously persisted draft with freshly built defaults.
+  const hydratedRef = useRef(false)
+
+  // Restore any in-progress workout for this session from a previous visit.
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(storageKey)
+      if (raw) {
+        const saved = JSON.parse(raw) as PersistedDraft
+        const fresh =
+          saved.version === DRAFT_STORAGE_VERSION &&
+          typeof saved.savedAt === "number" &&
+          Date.now() - saved.savedAt < DRAFT_MAX_AGE_MS
+        if (fresh && Array.isArray(saved.drafts) && saved.drafts.length > 0) {
+          setDrafts(saved.drafts)
+          setNotes(saved.notes ?? "")
+          if (typeof saved.startedAt === "number") setStartedAt(saved.startedAt)
+        } else {
+          window.localStorage.removeItem(storageKey)
+        }
+      }
+    } catch {
+      // Ignore corrupt or unavailable storage.
+    }
+    hydratedRef.current = true
+  }, [storageKey])
+
+  // Persist progress so a refresh or accidental navigation doesn't lose work.
+  useEffect(() => {
+    if (!hydratedRef.current) return
+    try {
+      const payload: PersistedDraft = {
+        version: DRAFT_STORAGE_VERSION,
+        startedAt,
+        notes,
+        drafts,
+        savedAt: Date.now()
+      }
+      window.localStorage.setItem(storageKey, JSON.stringify(payload))
+    } catch {
+      // Ignore storage write failures (e.g. private mode quota).
+    }
+  }, [storageKey, startedAt, notes, drafts])
 
   const totals = useMemo(() => {
     const done = drafts.filter((d) => d.done).length
@@ -163,6 +223,11 @@ export default function WorkoutLogger({
         return
       }
       timerRef.current?.stop()
+      try {
+        window.localStorage.removeItem(storageKey)
+      } catch {
+        // Ignore storage removal failures.
+      }
       router.push(res.id ? `/history/${res.id}` : "/history")
       router.refresh()
     })
